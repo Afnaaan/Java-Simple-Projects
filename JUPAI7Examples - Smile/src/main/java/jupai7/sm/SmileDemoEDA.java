@@ -2,7 +2,9 @@ package jupai7.sm;
 
 import smile.classification.RandomForest;
 import smile.data.DataFrame;
+import smile.data.Tuple;
 import smile.data.formula.Formula;
+import smile.data.measure.Measure;
 import smile.data.measure.NominalScale;
 import smile.data.vector.BaseVector;
 import smile.data.vector.IntVector;
@@ -10,9 +12,7 @@ import smile.plot.swing.Histogram;
 
 import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.Map;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class SmileDemoEDA {
@@ -26,9 +26,9 @@ public class SmileDemoEDA {
         DataFrame trainData = pProvider.readCSV (sd.trainPath);
         System.out.println("main structure");
         System.out.println (trainData.structure ());
-        System.in.read();
+//        System.in.read();
         System.out.println (trainData.summary ());
-        System.in.read();
+//        System.in.read();
         trainData = trainData.merge (IntVector.of ("Gender",
                 encodeCategory (trainData, "Sex")));
         trainData = trainData.merge (IntVector.of ("PClassValues",
@@ -37,19 +37,19 @@ public class SmileDemoEDA {
         System.out.println ("=======Encoding Non Numeric Data==============");
         System.out.println (trainData.structure ());
         //System.out.println (trainData);
-         System.in.read();
+//        System.in.read();
         System.out.println ("=======Dropping the Name, Pclass, and Sex Columns==============");
         trainData = trainData.drop ("Name");
         trainData=trainData.drop("Pclass");
         trainData=trainData.drop("Sex");
         System.out.println (trainData.structure ());
-         System.in.read();
+//        System.in.read();
         System.out.println (trainData.summary ());
-         System.in.read();
+//        System.in.read();
         trainData = trainData.omitNullRows ();
         System.out.println ("=======After Omitting null Rows==============");
         System.out.println (trainData.summary ());
-         System.in.read();
+//        System.in.read();
         System.out.println ("=======Start of Explaratory Data Analysis==============");
         try {
             eda (trainData);
@@ -62,14 +62,32 @@ public class SmileDemoEDA {
         System.out.println(model.metrics ());
 
         //TODO load test data to validate model
+        System.out.println ("=======test data==============");
         DataFrame fullData = pProvider.readCSV (sd.fullDatatPath);
         DataFrame testData = pProvider.readtestCSV(sd.testPath);
-
-        testData.merge(fullData.stringVector("Survived"));
+        System.out.println("size before merge"+ testData.size());
+        int[] testSurvived = new int[testData.size()];
+        ListIterator<Tuple> iterator = testData.stream ().collect (Collectors.toList ()).listIterator ();
+        while (iterator.hasNext ()) {
+            Tuple t = iterator.next ();
+            int i = 0;
+            Optional<Tuple> tuple1 = fullData.stream().filter(tuple -> tuple.getString("Name").equals(t.getString("Name"))).findFirst();
+            if (tuple1.isPresent()) {
+                testSurvived[i] = tuple1.get().getAs("Survived");
+                System.out.println(testSurvived[i]);
+            }
+            else
+            {
+                testSurvived[i] = 0;
+            }
+            i +=1;
+        }
+        testData = testData.merge(IntVector.of("Survived", testSurvived));
 
         System.out.println("testData structure");
         System.out.println (testData.structure ());
         System.in.read();
+        System.out.println("testData summary");
         System.out.println (testData.summary ());
         System.in.read();
 
